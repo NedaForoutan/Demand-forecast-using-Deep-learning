@@ -92,12 +92,28 @@ sn.heatmap(cor_matrix, vmax=.8, square=True, annot=True)
 #plt.show()
 
 #Sorting data by "Date"
+data['year'] = pd.to_datetime(data['Date']).dt.year
+data['month'] = pd.to_datetime(data['Date']).dt.month
 data['Date'] = pd.to_datetime(data['Date']).dt.date
 data.sort_values(by='Date', inplace=True, ascending=True)
 
+train = data[data.year.isin([2010, 2011, 2012])]
+train = train[train.month.isin([1,2,3,4,5,6,7])]
 
+train = train.drop(['year'], axis = 1)
+train = train.drop(['month'], axis = 1)
 
+#print(train.shape)
 
+test = data[data.year == 2012]
+test = test[test.month.isin([8,9,10])]  #Aug - Oct
+
+test = test.drop(['year'], axis = 1)
+test = test.drop(['month'], axis = 1)
+
+#print(test.shape)
+data = data.drop(['year'], axis = 1)
+data = data.drop(['month'], axis = 1)
 
 #splitting the data into train, validation, test
 y = data['Weekly_Sales']
@@ -117,4 +133,5 @@ def WMSE (X, Y, pred):
   weight = x.IsHoliday.apply(lambda holiday:5 if holiday else 1)
   return np.sum(weight * np.square(Y - pred), axis = 0) / np.sum(weight)
 
-#
+#Predict the department-wide sales for each store for the three months August 2012- October 2012
+print(data.Date)

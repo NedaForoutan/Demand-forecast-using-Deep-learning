@@ -133,8 +133,8 @@ data = data.drop(['year', 'month'], axis = 1)
 
 #just normalizing y_train :Weekly_Sales
 scalar = MinMaxScaler(feature_range=(0, 1))
-train['Weely_Sales'] = scalar.fit_transform(np.array(train.Weekly_Sales).reshape(-1,1))
-valid['Weely_Sales'] = scalar.fit_transform(np.array(valid.Weekly_Sales).reshape(-1,1))
+train['Weekly_Sales'] = scalar.fit_transform(np.array(train.Weekly_Sales).reshape(-1,1))
+valid['Weekly_Sales'] = scalar.fit_transform(np.array(valid.Weekly_Sales).reshape(-1,1))
 
 #indexing data by 'Date'
 train = train.set_index(['Date'], drop = True)
@@ -147,7 +147,7 @@ def create_inout_sequences(input_data, tw):
     L = len(input_data)
     for i in range(L-tw):
         train_seq = input_data[i:i+tw]
-        train_label = input_data.Weekly_Sales[i+tw:i+tw+1]
+        train_label = input_data[:, 1:2][i+tw:i+tw+1]
         inout_seq.append((train_seq ,train_label))
     return inout_seq
 
@@ -156,17 +156,105 @@ num_store = 45
 window = num_week * num_store
 
 #pass data to tensor 
-train = torch.FloatTensor(train).view(-1)
+train_tensor = torch.FloatTensor(train.values.astype(np.float32))
 
 #convert our training data into sequences and corresponding labels
-train_inout_seq = create_inout_sequences(train, window)
+train_inout_seq = create_inout_sequences(train_tensor, window)
 
+train_inout_seq[1]
 
+#LSTM
+class LSTM(nn.Module):
+    def __init__(self, input_size=14, hidden_layer_size=100, output_size=num_store):
+        super().__init__()
+        self.hidden_layer_size = hidden_layer_size
+
+        self.lstm = nn.LSTM(input_size, hidden_layer_size)
+
+        self.linear = nn.Linear(hidden_layer_size, output_size)
+
+        self.hidden_cell = (torch.zeros(1,1,self.hidden_layer_size),
+                            torch.zeros(1,1,self.hidden_layer_size))
+
+    def forward(self, input_seq):
+        lstm_out, self.hidden_cell = self.lstm(input_seq.view(len(input_seq) ,1, -1), self.hidden_cell)
+        predictions = self.linear(lstm_out.view(len(input_seq), -1))
+        return predictions[-1]
 
 #weighted holidays
 def WMSE (X, Y, pred):
-  weight = x.IsHoliday.apply(lambda holiday:5 if holiday else 1)
+  weight = x[: , 2:3].apply(lambda holiday:5 if holiday else 1)
   return np.sum(weight * np.square(Y - pred), axis = 0) / np.sum(weight)
 
-#Predict the department-wide sales for each store for the three months August 2012- October 2012
-print(data.Date)
+model = LSTM()
+loss_function = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+print(model)
+
+lr = 11e-3
+
+#Train
+
+
+epochs = 150
+best_acc = 0
+patience = 5
+count = 0
+
+for i in range(epochs):
+    for seq, labels in train_inout_seq:
+        optimizer.zero_grad()
+        model.hidden_cell = (torch.zeros(1, 1, model.hidden_layer_size),
+                        torch.zeros(1, 1, model.hidden_layer_size))
+
+        y_pred = model(seq)
+
+        
+        single_loss = loss_function(y_pred, labels) #WMSE(seq, labels, y_pred)
+        print(single_loss.item())
+        single_loss.backward()
+        optimizer.step()
+
+    if i%25 == 1:
+        print(f'epoch: {i:3} loss: {single_loss.item():10.8f}')
+
+    # Code to update the lr
+    lr *= learning_rate_decay
+    update_lr(optimizer, lr)
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for seq, labels in train_inout_seq:
+          y_pred = model(seq)
+          _, predicted = torch.max(y_pred.data, 1)
+          total += labels.size(0)
+          correct += (predicted == labels).sum().item()
+
+        #Early stopping to get best model from validation  
+        val_acc = 100 * correct /total
+        if val_acc > best_acc:
+          best_acc = val_acc
+          best_model = model
+          torch.save(model.state_dict(), 'checkpoint.pt')
+          count = 0
+        else:   #after how many epoches not improving of validation accuracy stop
+          count += 1
+          if count >= patience:
+            break;
+
+        print('Validataion accuracy is: {} %'.format(100 * correct / total))
+
+print(f'epoch: {i:3} loss: {single_loss.item():10.10f}')
+
+best_model = torch.load('checkpoint.pt')
+model.load_state_dict(best_model)
+
+model.eval()
+
+for i in range(len(test)):
+    seq = torch.FloatTensor(test_inputs[-window:])
+    with torch.no_grad():
+        model.hidden = (torch.zeros(1, 1, model.hidden_layer_size),
+                        torch.zeros(1, 1, model.hidden_layer_size))
+        test_inputs.append(model(seq).item())

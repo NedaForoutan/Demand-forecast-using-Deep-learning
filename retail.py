@@ -82,6 +82,24 @@ for col in norm_columns:
 
 data[:5]
 
+print(data[0:1].IsHoliday.item())
+
+date = data.Date.unique()
+store = data.Store.unique()
+new = pd.DataFrame(columns=data.columns)
+new = new.drop(['Dept'], axis = 1)
+
+
+for d in date:
+  for s in store:
+    temp = data[data.Store == s]
+    temp = temp[temp.Date == d]
+    new = new.append({'Store': s, 'Date':d, 'Weekly_Sales' : temp.Weekly_Sales.mean(), 'IsHoliday': temp[0:1].IsHoliday.item(), 'Temperature':temp[0:1].Temperature.item(), 'Fuel_Price' : temp[0:1].Fuel_Price.item(), 'MarkDown1': temp[0:1].MarkDown1.mean(),	'MarkDown2': temp[0:1].MarkDown2.mean(), 'MarkDown3': temp[0:1].MarkDown3.mean(), 'MarkDown4' : temp[0:1].MarkDown4.mean(),	'MarkDown5' : temp[0:1].MarkDown5.mean(),	'CPI': temp[0:1].CPI.mean(),	'Unemployment': temp[0:1].Unemployment.item(),	'Type' : temp[0:1].Type.item() , 'Size': temp[0:1].Size.mean() }, ignore_index=True)
+
+#print(new[:5])
+
+data = new
+
 #correlation matrix
 cor_matrix = data.corr()
 cor_matrix
@@ -100,24 +118,42 @@ data.sort_values(by='Date', inplace=True, ascending=True)
 train = data[data.year.isin([2010, 2011, 2012])]
 train = train[train.month.isin([1,2,3,4,5,6,7])]
 
-train = train.drop(['year'], axis = 1)
-train = train.drop(['month'], axis = 1)
+train = train.drop(['year', 'month'], axis = 1)
 
 #print(train.shape)
 
 test = data[data.year == 2012]
 test = test[test.month.isin([8,9,10])]  #Aug - Oct
 
-test = test.drop(['year'], axis = 1)
-test = test.drop(['month'], axis = 1)
+test = test.drop(['year', 'month'], axis = 1)
 
 #print(test.shape)
-data = data.drop(['year'], axis = 1)
-data = data.drop(['month'], axis = 1)
+data = data.drop(['year', 'month'], axis = 1)
+
+#indexing data by 'Date'
+train = train.set_index(['Date'], drop = True)
+test = test.set_index(['Date'], drop = True)
+
+train[40:50]
+
+num_week = 52  #365/7 number of week in a year
+num_store = 45
+window = num_week * num_store
+
+#creating window data set
+def create_inout_sequences(input_data, tw):
+    inout_seq = []
+    L = len(input_data)
+    for i in range(L-tw):
+        train_seq = input_data[i:i+tw]
+        train_label = input_data.Weekly_Sales[i+tw:i+tw+1]
+        inout_seq.append((train_seq ,train_label))
+    return inout_seq
 
 #splitting the data into train, validation, test
-y = data['Weekly_Sales']
-x = data.drop(['Weekly_Sales'], axis = 1)
+# y = data['Weekly_Sales']
+# x = data.drop(['Weekly_Sales'], axis = 1)
+
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
 

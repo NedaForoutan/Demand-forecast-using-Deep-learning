@@ -75,7 +75,7 @@ print(data[:5])
 
 #Normalizing
 #def normalize():
-scalar = MinMaxScaler(feature_range=(-1, 1))
+scalar = MinMaxScaler(feature_range=(0, 1))
 norm_columns = ['Temperature', 'Fuel_Price', 'CPI', 'Unemployment', 'Size','MarkDown1','MarkDown2','MarkDown3','MarkDown4','MarkDown5']
 for col in norm_columns:
   data[col] = scalar.fit_transform(np.array(data[col]).reshape(-1,1))
@@ -91,7 +91,8 @@ f, ax = plt.subplots(figsize=(12, 9))
 sn.heatmap(cor_matrix, vmax=.8, square=True, annot=True)
 #plt.show()
 
-data = data.sort_values(by='Date', ascending=True)
+data['Date'] = pd.to_datetime(data['Date']).dt.date
+data.sort_values(by='Date', inplace=True, ascending=True)
 
 #splitting the data into train, validation, test
 y = data['Weekly_Sales']
@@ -105,8 +106,3 @@ def WMSE (X, Y, pred):
   weight = x.IsHoliday.apply(lambda holiday:5 if holiday else 1)
   return np.sum(weight * np.square(Y - pred), axis = 0) / np.sum(weight)
 
-pd.to_datetime(data['Date'])[:5]
-
-feature selction
-window
-CNN, CNN_LSTM

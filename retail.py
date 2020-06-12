@@ -134,9 +134,11 @@ data = data.drop(['year', 'month'], axis = 1)
 #just normalizing y_train :Weekly_Sales
 scalar = MinMaxScaler(feature_range=(0, 1))
 train['Weely_Sales'] = scalar.fit_transform(np.array(train.Weekly_Sales).reshape(-1,1))
+valid['Weely_Sales'] = scalar.fit_transform(np.array(valid.Weekly_Sales).reshape(-1,1))
 
 #indexing data by 'Date'
 train = train.set_index(['Date'], drop = True)
+valid = valid .set_index(['Date'], drop = True)
 test = test.set_index(['Date'], drop = True)
 
 #creating window data set
@@ -153,17 +155,13 @@ num_week = 52  #365/7 number of week in a year
 num_store = 45
 window = num_week * num_store
 
-#splitting the data into train, validation, test
-# y = data['Weekly_Sales']
-# x = data.drop(['Weekly_Sales'], axis = 1)
+#pass data to tensor 
+train = torch.FloatTensor(train).view(-1)
+
+#convert our training data into sequences and corresponding labels
+train_inout_seq = create_inout_sequences(train, window)
 
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
-
-
-
-
-x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.3)
 
 #weighted holidays
 def WMSE (X, Y, pred):

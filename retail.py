@@ -258,7 +258,7 @@ for i in range(len(test)):
     with torch.no_grad():
         model.hidden = (torch.zeros(1, 1, model.hidden_layer_size),
                         torch.zeros(1, 1, model.hidden_layer_size))
-        test_inputs.append(model(seq).item())
+        test_inputs.append(best_model(seq).item())
 
 actual_predictions = scaler.inverse_transform(np.array( test_inputs[window:] ).reshape(-1, 1))
 correct = (actual_predictions == labels).sum().item()

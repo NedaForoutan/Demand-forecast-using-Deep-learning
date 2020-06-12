@@ -91,6 +91,7 @@ f, ax = plt.subplots(figsize=(12, 9))
 sn.heatmap(cor_matrix, vmax=.8, square=True, annot=True)
 #plt.show()
 
+#Sorting data by "Date"
 data['Date'] = pd.to_datetime(data['Date']).dt.date
 data.sort_values(by='Date', inplace=True, ascending=True)
 
@@ -98,7 +99,13 @@ data.sort_values(by='Date', inplace=True, ascending=True)
 y = data['Weekly_Sales']
 x = data.drop(['Weekly_Sales'], axis = 1)
 
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3) 
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
+
+#just normalizing y_train :Weekly_Sales
+scalar = MinMaxScaler(feature_range=(0, 1))
+y_train = scalar.fit_transform(np.array(y_train).reshape(-1,1))
+
+
 x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.3)
 
 #weighted holidays
@@ -106,3 +113,6 @@ def WMSE (X, Y, pred):
   weight = x.IsHoliday.apply(lambda holiday:5 if holiday else 1)
   return np.sum(weight * np.square(Y - pred), axis = 0) / np.sum(weight)
 
+scalar = MinMaxScaler(feature_range=(0, 1))
+y_train = scalar.fit_transform(np.array(y_train).reshape(-1,1))
+y_train[:5]

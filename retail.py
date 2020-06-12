@@ -100,6 +100,9 @@ data.sort_values(by='Date', inplace=True, ascending=True)
 #separate department, weekly_sales, Date
 cont1_data = data[['Dept', 'Date', 'Weekly_Sales']]
 #print(cont1_data.shape)
+dept_data = cont1_data.pivot_table(values = 'Weekly_Sales', index = cont1_data.Date, columns ='Dept', aggfunc='first')
+
+#print(dept_data.shape)
 
 
 

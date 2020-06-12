@@ -115,11 +115,12 @@ data['month'] = pd.to_datetime(data['Date']).dt.month
 data['Date'] = pd.to_datetime(data['Date']).dt.date
 data.sort_values(by='Date', inplace=True, ascending=True)
 
-train = data[data.year.isin([2010, 2011, 2012])]
-train = train[train.month.isin([1,2,3,4,5,6,7])]
+train = data[data.year.isin([2010, 2011])]
+
+valid = data[(data.year == 2012 ) & (data.month.isin([1,2,3,4,5,6,7]))]
 
 train = train.drop(['year', 'month'], axis = 1)
-
+valid = valid.drop(['year', 'month'], axis = 1)
 #print(train.shape)
 
 test = data[data.year == 2012]
@@ -130,15 +131,13 @@ test = test.drop(['year', 'month'], axis = 1)
 #print(test.shape)
 data = data.drop(['year', 'month'], axis = 1)
 
+#just normalizing y_train :Weekly_Sales
+scalar = MinMaxScaler(feature_range=(0, 1))
+train['Weely_Sales'] = scalar.fit_transform(np.array(train.Weekly_Sales).reshape(-1,1))
+
 #indexing data by 'Date'
 train = train.set_index(['Date'], drop = True)
 test = test.set_index(['Date'], drop = True)
-
-train[40:50]
-
-num_week = 52  #365/7 number of week in a year
-num_store = 45
-window = num_week * num_store
 
 #creating window data set
 def create_inout_sequences(input_data, tw):
@@ -150,6 +149,10 @@ def create_inout_sequences(input_data, tw):
         inout_seq.append((train_seq ,train_label))
     return inout_seq
 
+num_week = 52  #365/7 number of week in a year
+num_store = 45
+window = num_week * num_store
+
 #splitting the data into train, validation, test
 # y = data['Weekly_Sales']
 # x = data.drop(['Weekly_Sales'], axis = 1)
@@ -157,9 +160,7 @@ def create_inout_sequences(input_data, tw):
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3)
 
-#just normalizing y_train :Weekly_Sales
-scalar = MinMaxScaler(feature_range=(0, 1))
-y_train = scalar.fit_transform(np.array(y_train).reshape(-1,1))
+
 
 
 x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.3)

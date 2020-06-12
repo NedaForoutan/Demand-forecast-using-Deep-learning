@@ -95,14 +95,7 @@ sn.heatmap(cor_matrix, vmax=.8, square=True, annot=True)
 data['Date'] = pd.to_datetime(data['Date']).dt.date
 data.sort_values(by='Date', inplace=True, ascending=True)
 
-#context 1
-#predict which departments will be affected and to what extent.
-#separate department, weekly_sales, Date
-cont1_data = data[['Dept', 'Date', 'Weekly_Sales']]
-#print(cont1_data.shape)
-dept_data = cont1_data.pivot_table(values = 'Weekly_Sales', index = cont1_data.Date, columns ='Dept', aggfunc='first')
 
-#print(dept_data.shape)
 
 
 

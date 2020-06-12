@@ -95,6 +95,14 @@ sn.heatmap(cor_matrix, vmax=.8, square=True, annot=True)
 data['Date'] = pd.to_datetime(data['Date']).dt.date
 data.sort_values(by='Date', inplace=True, ascending=True)
 
+#context 1
+#predict which departments will be affected and to what extent.
+#separate department, weekly_sales, Date
+cont1_data = data[['Dept', 'Date', 'Weekly_Sales']]
+#print(cont1_data.shape)
+
+
+
 #splitting the data into train, validation, test
 y = data['Weekly_Sales']
 x = data.drop(['Weekly_Sales'], axis = 1)
@@ -113,6 +121,4 @@ def WMSE (X, Y, pred):
   weight = x.IsHoliday.apply(lambda holiday:5 if holiday else 1)
   return np.sum(weight * np.square(Y - pred), axis = 0) / np.sum(weight)
 
-scalar = MinMaxScaler(feature_range=(0, 1))
-y_train = scalar.fit_transform(np.array(y_train).reshape(-1,1))
-y_train[:5]
+#

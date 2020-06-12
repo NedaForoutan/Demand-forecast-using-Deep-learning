@@ -227,7 +227,6 @@ for i in range(epochs):
         total = 0
         for seq, labels in train_inout_seq:
           y_pred = model(seq)
-          _, predicted = torch.max(y_pred.data, 1)
           total += labels.size(0)
           correct += (predicted == labels).sum().item()
 
@@ -250,6 +249,8 @@ print(f'epoch: {i:3} loss: {single_loss.item():10.10f}')
 best_model = torch.load('checkpoint.pt')
 model.load_state_dict(best_model)
 
+test_inputs = valid[-len(test):].tolist()
+
 model.eval()
 
 for i in range(len(test)):
@@ -258,3 +259,7 @@ for i in range(len(test)):
         model.hidden = (torch.zeros(1, 1, model.hidden_layer_size),
                         torch.zeros(1, 1, model.hidden_layer_size))
         test_inputs.append(model(seq).item())
+
+actual_predictions = scaler.inverse_transform(np.array( test_inputs[window:] ).reshape(-1, 1))
+correct = (actual_predictions == labels).sum().item()
+print(test_accuracy = 100 * correct /len(test))
